@@ -5,7 +5,12 @@ import '../models/installed_app.dart';
 abstract class InstalledAppsService {
   Future<List<InstalledApp>> loadApps();
 
-  Future<Uint8List?> loadIcon(String packageName, {int sizePx = 96});
+  Future<String?> loadIconPath(String packageName, {int sizePx = 96});
+
+  Future<Map<String, String?>> loadIconPaths(
+    List<String> packageNames, {
+    int sizePx = 96,
+  });
 
   Future<void> launch(String packageName);
 
@@ -36,12 +41,26 @@ class MethodChannelInstalledAppsService implements InstalledAppsService {
   }
 
   @override
-  Future<Uint8List?> loadIcon(String packageName, {int sizePx = 96}) async {
-    final icon = await _channel.invokeMethod<Uint8List>('getAppIcon', {
+  Future<String?> loadIconPath(String packageName, {int sizePx = 96}) async {
+    return _channel.invokeMethod<String>('getAppIcon', {
       'packageName': packageName,
       'sizePx': sizePx,
     });
-    return icon;
+  }
+
+  @override
+  Future<Map<String, String?>> loadIconPaths(
+    List<String> packageNames, {
+    int sizePx = 96,
+  }) async {
+    final response = await _channel.invokeMapMethod<String, Object?>(
+      'getAppIcons',
+      {'packageNames': packageNames, 'sizePx': sizePx},
+    );
+    if (response == null) {
+      return <String, String?>{};
+    }
+    return response.map((key, value) => MapEntry(key, value as String?));
   }
 
   @override
